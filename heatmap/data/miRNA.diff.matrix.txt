@@ -1,4 +1,4 @@
-	Cerebrum	Cerebellum	Retina	Colon	Liver	Small_Intestine	Stomach	Left_Atrium	Left_Ventricle	Right_Atrium	Right_Ventricle	Kidney	Lung	Spleen	Ovary	Uterus	Testis	ASA	ILB	ULB	GOM	MAD	RAD	PAD	LIN	MAS	RHO	TA	GAS-L	GM	PM	SOL	PEIC	PK15
+	Cerebrum	Cerebellum	Retina	Colon	Liver	Small_Intestine	Stomach	Left_Atrium	Left_Ventricle	Right_Atrium	Right_Ventricle	Kidney	Lung	Spleen	Ovary	Uterus	Testis	ASA	ILB	ULB	GOM	MAD	RAD	PAD	LIN	MAS	RHO	TA	GAS-L	GM	PM	SOL	PIEC	PK15
 Cerebrum	0	96	106	175	170	164	123	187	173	244	190	199	184	182	191	197	247	136	136	143	166	162	168	175	203	146	162	223	209	201	216	199	369	246
 Cerebellum	140	0	128	74	63	78	158	20	56	26	44	66	67	60	43	55	105	42	62	44	31	39	38	28	52	48	35	43	31	47	45	51	412	298
 Retina	127	142	0	203	168	169	149	180	210	224	228	176	175	190	194	185	272	158	175	167	189	165	182	182	192	163	192	224	242	229	237	233	373	239

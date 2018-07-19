@@ -1,0 +1,6 @@
+gene_type   detected_number diff_num
+protein_coding  20801   19177
+TUCP    2441    2431
+lncRNA  19074   18919
+circRNA 48367   12181
+miRNA   2845    1618
