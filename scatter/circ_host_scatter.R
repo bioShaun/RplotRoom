@@ -4,27 +4,28 @@ library(dplyr)
 library(data.table)
 
 
-circ_prop <- read.delim('./data/circ_host_prop.txt')
-circ_prop$log_host_tpm <- log10(circ_prop$value_y)
-circ_prop$log_circ_tpm <- log10(circ_prop$value_x)
-circ_prop$log2_prop <- log2(circ_prop$host_prop)
+circ_prop <- fread('./data/ciri.circ_host.tpm.all.txt')
+circ_prop$log_host_tpm <- log10(circ_prop$host_tpm)
+circ_prop$log_circ_tpm <- log10(circ_prop$circRNA_tpm)
+circ_prop$log_ratio <- log10(circ_prop$junction_reads_ratio)
 
-select_data <- filter(circ_prop, variable == 'Cerebellum')
-f_circ_prop <- filter(circ_prop, value_x >= 0.5)
-
-p <- ggplot(circ_prop, aes(log_host_tpm, log_circ_tpm, color=variable)) +
+p <- ggplot(circ_prop, aes(log_host_tpm, log_circ_tpm, color=group_id)) +
   geom_point() +
-  facet_wrap(~variable, nrow = 5)
+  facet_wrap(~group_id, nrow = 5) +
+  xlab('log10 Host TPM') + ylab('log10 circRNA TPM')
 p
 
+ggsave('CIRI_tpm_compare.png', plot = p, width = 18, height = 12,
+  dpi = 300, type = "cairo")
+ggsave('CIRI_tpm_compare.pdf', plot = p, width = 18, height = 12,
+  device = cairo_pdf)
 
-circ_exp <- fread('./data/circRNA.exp.norm.group.txt')
-m_circ_exp <- melt(as.data.frame(circ_exp))
-f_m_circ_exp <- filter(m_circ_exp, value > 0)
-f_m_circ_exp$log_tpm <- log10(f_m_circ_exp$value + 1)
-p <- ggplot(f_m_circ_exp, aes(log_tpm, fill=variable, color=variable)) +
-  geom_density(alpha=0.5) +
-  facet_wrap(~variable)
+p <- ggplot(circ_prop, aes(log_host_tpm, log_ratio, color=group_id)) +
+  geom_point() +
+  facet_wrap(~group_id, nrow = 5) +
+  xlab('log10 Host TPM') + ylab('log10 circRNA ratio')
 p
-ggsave(filename = 'circRNA_exp_distribution.png', plot = p, width = 16, 
-  height = 10, type = "cairo-png")
+ggsave('CIRI_ratio_compare.png', plot = p, width = 18, height = 12,
+  dpi = 300, type = "cairo")
+ggsave('CIRI_ratio_compare.pdf', plot = p, width = 18, height = 12,
+  device = cairo_pdf)
