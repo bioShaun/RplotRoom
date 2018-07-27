@@ -105,6 +105,7 @@ sapply(genes, diff_heatmap)
 # )
 
 # try ggplot2
+# (https://learnr.wordpress.com/2010/01/26/ggplot2-quick-heatmap-plotting/)
 diff_matrix <- read.delim(diff_matrix_file, check.names = F)
 m_diff_matrix_por <- melt(diff_matrix)
 colnames(m_diff_matrix_por) <- c('comp1', 'comp2', 'number')
