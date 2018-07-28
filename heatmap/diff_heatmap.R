@@ -81,7 +81,7 @@ diff_heatmap <- function(name, num_stats='detected_number',
     heat.pal.values = c(0, 0.5, 1),
     heat.pal = color_pal,
     X.text = as.matrix(diff_matrix),
-    X.text.size = 2,
+    X.text.size = 2, 
     bottom.label.text.angle = 90,
     bottom.label.text.size = 3,
     left.label.text.size = 3,
@@ -106,10 +106,20 @@ sapply(genes, diff_heatmap)
 
 # try ggplot2
 # (https://learnr.wordpress.com/2010/01/26/ggplot2-quick-heatmap-plotting/)
-diff_matrix <- read.delim(diff_matrix_file, check.names = F)
-m_diff_matrix_por <- melt(diff_matrix)
+diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.txt', sep='.'))
+diff_matrix <- read.delim(diff_matrix_file, check.names = F, row.names = 1)
+total_num <- gene_type_num[rownames(diff_matrix), num_stats]
+diff_matrix_por <- diff_matrix / total_num
+diff_matrix_por$group_id <- rownames(diff_matrix_por)
+plot_order <- rownames(diff_matrix_por)
+m_diff_matrix_por <- melt(diff_matrix_por, id.vars = 'group_id')
 colnames(m_diff_matrix_por) <- c('comp1', 'comp2', 'number')
-p <- ggplot(m_diff_matrix_por, aes(comp1, comp2)) +
+m_diff_matrix_por$comp1 <- factor(m_diff_matrix_por$comp1,
+                                  levels = plot_order)
+m_diff_matrix_por$comp2 <- factor(m_diff_matrix_por$comp2,
+                                  levels = plot_order)
+p <- ggplot(m_diff_matrix_por, aes(comp2, comp1)) +
   geom_tile(aes(fill = number), color='white') +
-  scale_fill_gradient(low = "white", high = "steelblue")
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  geom_text(aes(comp2, comp1, label = number), size )
 p
