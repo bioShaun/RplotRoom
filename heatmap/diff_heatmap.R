@@ -6,11 +6,12 @@ library(viridis)
 library(corrplot)
 library(reshape2)
 library(ggplot2)
+library(tibble)
 
 #genes <- c('lncRNA', 'TUCP', 'miRNA', 'circRNA', 'protein_coding')
 genes <- c('miRNA')
 
-gene_num_df <- read.table('./data/all.detected_genes.all_samples.txt', header = T)
+gene_num_df <- read.table('./data/all.diff.num.txt', header = T)
 name <- 'miRNA'
 num_stats='detected_number'
 gene_type_num <- filter(gene_num_df, gene_biotype == name)
@@ -106,20 +107,116 @@ sapply(genes, diff_heatmap)
 
 # try ggplot2
 # (https://learnr.wordpress.com/2010/01/26/ggplot2-quick-heatmap-plotting/)
-diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.txt', sep='.'))
-diff_matrix <- read.delim(diff_matrix_file, check.names = F, row.names = 1)
-total_num <- gene_type_num[rownames(diff_matrix), num_stats]
-diff_matrix_por <- diff_matrix / total_num
-diff_matrix_por$group_id <- rownames(diff_matrix_por)
-plot_order <- rownames(diff_matrix_por)
-m_diff_matrix_por <- melt(diff_matrix_por, id.vars = 'group_id')
-colnames(m_diff_matrix_por) <- c('comp1', 'comp2', 'number')
-m_diff_matrix_por$comp1 <- factor(m_diff_matrix_por$comp1,
-                                  levels = plot_order)
-m_diff_matrix_por$comp2 <- factor(m_diff_matrix_por$comp2,
-                                  levels = plot_order)
-p <- ggplot(m_diff_matrix_por, aes(comp2, comp1)) +
-  geom_tile(aes(fill = number), color='white') +
-  scale_fill_gradient(low = "white", high = "steelblue") +
-  geom_text(aes(comp2, comp1, label = number), size )
-p
+
+theme_heatmap <- function(base_size = 9) {
+  theme_bw(base_size = base_size) + theme(
+    panel.background = element_blank(),
+    panel.grid = element_blank(),
+    panel.border = element_blank(), 
+    legend.position = "none",
+    axis.ticks = element_blank(),
+    axis.text.x = element_text(
+      size = base_size* 0.8,
+      angle = 45,
+      hjust = 0,
+      face = 'bold'
+    ),
+    axis.text.y = element_text(
+      face = 'bold',
+      size = base_size* 0.8
+    )
+  )
+} 
+
+melt_diff_matrix <- function(diff_matrix, plot_order, type='up'){
+  if (type == 'up') {
+    diff_matrix[lower.tri(diff_matrix)] <- NA
+  } else if (type == 'down') {
+    diff_matrix[upper.tri(diff_matrix)] <- NA
+  } else {
+    diff_matrix <- diff_matrix
+  }
+  diff_matrix <- data.frame(diff_matrix, check.names = F)
+  diff_matrix$group_id <- rownames(diff_matrix)
+  m_diff_matrix_por <- melt(diff_matrix, id.vars = 'group_id')
+  
+  if (type == 'down')  {
+    colnames(m_diff_matrix_por) <- c('comp2', 'comp1', 'number')
+  } else {
+    colnames(m_diff_matrix_por) <- c('comp1', 'comp2', 'number')
+  }
+  
+  m_diff_matrix_por$comp1 <- factor(m_diff_matrix_por$comp1,
+    levels = rev(plot_order))
+  m_diff_matrix_por$comp2 <- factor(m_diff_matrix_por$comp2,
+    levels = plot_order)
+  m_diff_matrix_por <- m_diff_matrix_por[!(is.na(m_diff_matrix_por$number)),]
+  return(m_diff_matrix_por)
+}
+
+
+plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix){
+  p <- ggplot(m_diff_matrix_por, aes(comp2, comp1)) +
+    geom_tile(aes(fill = number), color='white') +
+    # scale_fill_gradient(low = "white", high = "steelblue") +
+    scale_fill_gradientn(colors = color1, limits=c(0,1)) +
+    geom_text(data=m_diff_matrix, aes(comp2, comp1, label = number), size=1.8 )
+  
+  p <- p + labs(x = "",y = "") + 
+    scale_x_discrete(expand = c(0, 0), position = "top") +
+    scale_y_discrete(expand = c(0, 0), position = 'right') 
+  
+  p <- p + theme_heatmap()
+  
+  return(p)
+}
+
+
+diff_heatmap_updown <- function(name, num_stats='diff_num') {
+  diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.txt', sep='.'))
+  diff_matrix <- read.delim(diff_matrix_file, check.names = F, row.names = 1)
+  gene_type_num <- filter(gene_num_df, gene_biotype == name)
+  rownames(gene_type_num) <- gene_type_num$tissue
+  total_num <- gene_type_num[rownames(diff_matrix), num_stats]
+  diff_matrix_por <- data.frame(t(t(diff_matrix) / total_num), check.names = F)
+  out_diff_matrix_por <- rownames_to_column(diff_matrix_por, var = 'Group') 
+  write.table(out_diff_matrix_por, file = paste(name, 'diff2', num_stats, 'matrix.txt', sep = '.'),
+    sep = '\t', quote = F, row.names = F)
+  plot_order <- rownames(diff_matrix_por)
+ 
+  
+  # for (each_type in c('up', 'down', 'all')) {
+  #   each_type = 'all'
+  #   t_diff_matrix_por <- melt_diff_matrix(diff_matrix_por, plot_order, type=each_type)
+  #   t_diff_matrix <- melt_diff_matrix(diff_matrix, plot_order, type=each_type) 
+  #   lp <- plot_heatmap(t_diff_matrix_por, t_diff_matrix)
+  #   ggsave(filename = paste(name, each_type,'diff.genes.png', sep = '.'),
+  #     width = 8, height = 8)
+  #   ggsave(filename = paste(name, each_type,'diff.genes.pdf', sep = '.'),
+  #     width = 8, height = 8)    
+  # }
+  each_type = 'all'
+  t_diff_matrix_por <- melt_diff_matrix(diff_matrix_por, plot_order, type=each_type)
+  t_diff_matrix <- melt_diff_matrix(diff_matrix, plot_order, type=each_type)
+  lp <- plot_heatmap(t_diff_matrix_por, t_diff_matrix)
+  ggsave(filename = paste(name, 'diff.genes.png', sep = '.'),
+    width = 8, height = 8)
+  ggsave(filename = paste(name, 'diff.genes.pdf', sep = '.'),
+    width = 8, height = 8)
+
+}
+
+
+genes <- c('lncRNA', 'TUCP', 'miRNA', 'circRNA', 'protein_coding')
+#genes <- c('miRNA')
+
+diff_heatmap_updown('TUCP')
+sapply(genes, diff_heatmap_updown)
+
+
+
+
+
+
+
+
