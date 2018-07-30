@@ -36,7 +36,7 @@ diff_num	tissue	gene_biotype
 1132	GOM	miRNA
 1137	Testis	miRNA
 1248	ILB	miRNA
-1516	PEIC	miRNA
+1516	PIEC	miRNA
 1117	LIN	miRNA
 1188	Left_Ventricle	miRNA
 1207	ULB	miRNA

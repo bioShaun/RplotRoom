@@ -11,7 +11,7 @@ library(tibble)
 #genes <- c('lncRNA', 'TUCP', 'miRNA', 'circRNA', 'protein_coding')
 genes <- c('miRNA')
 
-gene_num_df <- read.table('./data/all.diff.num.txt', header = T)
+gene_num_df <- read.table('./data/gene_num.txt', header = T)
 name <- 'miRNA'
 num_stats='detected_number'
 gene_type_num <- filter(gene_num_df, gene_biotype == name)
@@ -172,37 +172,45 @@ plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix){
 }
 
 
-diff_heatmap_updown <- function(name, num_stats='diff_num') {
+diff_heatmap_updown <- function(name, num_stats='diff_num', plot='all') {
   diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.txt', sep='.'))
   diff_matrix <- read.delim(diff_matrix_file, check.names = F, row.names = 1)
-  gene_type_num <- filter(gene_num_df, gene_biotype == name)
-  rownames(gene_type_num) <- gene_type_num$tissue
-  total_num <- gene_type_num[rownames(diff_matrix), num_stats]
-  diff_matrix_por <- data.frame(t(t(diff_matrix) / total_num), check.names = F)
-  out_diff_matrix_por <- rownames_to_column(diff_matrix_por, var = 'Group') 
-  write.table(out_diff_matrix_por, file = paste(name, 'diff2', num_stats, 'matrix.txt', sep = '.'),
-    sep = '\t', quote = F, row.names = F)
+  # gene_type_num <- filter(gene_num_df, gene_biotype == name)
+  # rownames(gene_type_num) <- gene_type_num$tissue
+  # total_num <- gene_type_num[rownames(diff_matrix), num_stats]
+  total_num <- filter(gene_num_df, gene_type == name)[, num_stats]
   plot_order <- rownames(diff_matrix_por)
  
   
-  # for (each_type in c('up', 'down', 'all')) {
-  #   each_type = 'all'
-  #   t_diff_matrix_por <- melt_diff_matrix(diff_matrix_por, plot_order, type=each_type)
-  #   t_diff_matrix <- melt_diff_matrix(diff_matrix, plot_order, type=each_type) 
-  #   lp <- plot_heatmap(t_diff_matrix_por, t_diff_matrix)
-  #   ggsave(filename = paste(name, each_type,'diff.genes.png', sep = '.'),
-  #     width = 8, height = 8)
-  #   ggsave(filename = paste(name, each_type,'diff.genes.pdf', sep = '.'),
-  #     width = 8, height = 8)    
-  # }
-  each_type = 'all'
-  t_diff_matrix_por <- melt_diff_matrix(diff_matrix_por, plot_order, type=each_type)
-  t_diff_matrix <- melt_diff_matrix(diff_matrix, plot_order, type=each_type)
-  lp <- plot_heatmap(t_diff_matrix_por, t_diff_matrix)
-  ggsave(filename = paste(name, 'diff.genes.png', sep = '.'),
-    width = 8, height = 8)
-  ggsave(filename = paste(name, 'diff.genes.pdf', sep = '.'),
-    width = 8, height = 8)
+  if (plot == 'updown') {
+    each_type = 'all'
+    diff_matrix_por <- data.frame(t(t(diff_matrix) / total_num), check.names = F)
+    out_diff_matrix_por <- rownames_to_column(diff_matrix_por, var = 'Group') 
+    write.table(out_diff_matrix_por, file = paste(name, 'diff2', num_stats, 'matrix.txt', sep = '.'),
+      sep = '\t', quote = F, row.names = F)    
+    t_diff_matrix_por <- melt_diff_matrix(diff_matrix_por, plot_order, type=each_type)
+    t_diff_matrix <- melt_diff_matrix(diff_matrix, plot_order, type=each_type)
+    lp <- plot_heatmap(t_diff_matrix_por, t_diff_matrix)
+    ggsave(filename = paste(name, 'diff.genes.png', sep = '.'),
+      width = 8, height = 8)
+    ggsave(filename = paste(name, 'diff.genes.pdf', sep = '.'),
+      width = 8, height = 8)    
+  } else {
+    total_diff_matrix <- diff_matrix + t(diff_matrix)
+    total_diff_matrix_por <- total_diff_matrix / total_num
+    out_total_diff_matrix_por <- rownames_to_column(total_diff_matrix_por, var = 'Group')
+    write.table(out_total_diff_matrix_por, file = paste(name, 'total.diff2', num_stats, 'matrix.txt', sep = '.'),
+      sep = '\t', quote = F, row.names = F) 
+    each_type = 'up'
+    total_m_diff_matrix_por <- melt_diff_matrix(total_diff_matrix_por, plot_order, type=each_type)
+    total_m_diff_matrix <- melt_diff_matrix(total_diff_matrix, plot_order, type=each_type)
+    tlp <- plot_heatmap(total_m_diff_matrix_por, total_m_diff_matrix)
+    ggsave(filename = paste(name, 'total.diff2', num_stats, 'png', sep = '.'),
+      width = 8, height = 8)
+    ggsave(filename = paste(name, 'total.diff2', num_stats, 'pdf', sep = '.'),
+      width = 8, height = 8)     
+  }
+  
 
 }
 
@@ -210,7 +218,7 @@ diff_heatmap_updown <- function(name, num_stats='diff_num') {
 genes <- c('lncRNA', 'TUCP', 'miRNA', 'circRNA', 'protein_coding')
 #genes <- c('miRNA')
 
-diff_heatmap_updown('TUCP')
+diff_heatmap_updown('miRNA')
 sapply(genes, diff_heatmap_updown)
 
 
