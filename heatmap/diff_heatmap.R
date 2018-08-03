@@ -158,8 +158,9 @@ melt_diff_matrix <- function(diff_matrix, plot_order, type='up'){
 plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix){
   p <- ggplot(m_diff_matrix_por, aes(comp2, comp1)) +
     geom_tile(aes(fill = number), color='white') +
-    # scale_fill_gradient(low = "white", high = "steelblue") +
-    scale_fill_gradientn(colors = color1, limits=c(0,1)) +
+    scale_fill_gradient2(low = "steelblue", mid = 'white', high = "red",
+      limits = c(-2,2)) +
+    # scale_fill_gradientn(colors = color1, limits=c(0,10)) +
     geom_text(data=m_diff_matrix, aes(comp2, comp1, label = number), size=1.8 )
   
   p <- p + labs(x = "",y = "") + 
@@ -220,11 +221,44 @@ genes <- c('lncRNA', 'TUCP', 'miRNA', 'circRNA', 'protein_coding')
 
 diff_heatmap_updown('miRNA')
 sapply(genes, diff_heatmap_updown)
+sapply(genes, diff_heatmap_updown, num_stats='detected_number')
 
 
 
+treat_fc_matric <- function(fc_matrix_file) {
+  base_diff_matrix <- read.delim(fc_matrix_file, check.names = F, row.names = 1)
+  base_diff_matrix <- abs(base_diff_matrix)
+  base_diff_matrix[is.na(base_diff_matrix)] <- 0
+  base_diff_matrix[base_diff_matrix < 1] <- 1
+  return(base_diff_matrix)
+}
 
 
+diff_heatmap_fc <- function(name='lncRNA') {
+  base_name <- 'protein_coding'
+  base_diff_file <- file.path('./data', paste(base_name, 'diff.fc.txt', sep='.'))
+  base_diff_matrix <- treat_fc_matric(base_diff_file)
+  
+  diff_matrix_file = file.path('./data', paste(name, 'diff.fc.txt', sep='.'))
+  diff_matrix <- treat_fc_matric(diff_matrix_file)
+  
+  comp_matrix <- round(log2(diff_matrix / base_diff_matrix), 2)
+  p_matrix <- comp_matrix
+  p_matrix[p_matrix > 2] <- 2
+  p_matrix[p_matrix < -2] <- -2
+  plot_order <- rownames(diff_matrix)
+  each_type = 'all'
+  
+  m_comp_matrix <- melt_diff_matrix(comp_matrix, plot_order, type=each_type)
+  p_m_comp_matrix <- melt_diff_matrix(p_matrix, plot_order, type=each_type)
+  
+  p <- plot_heatmap(p_m_comp_matrix, m_comp_matrix)
+  ggsave(filename = paste(name, 'vs', base_name, 'diff.fc.png', sep = '.'),
+    width = 8, height = 8, plot = p)
+  ggsave(filename = paste(name, 'vs', base_name, 'diff.fc.pdf', sep = '.'),
+    width = 8, height = 8, plot = p)  
+}
+diff_heatmap_fc()
 
-
-
+genes <- c('lncRNA', 'TUCP', 'miRNA', 'circRNA')
+sapply(genes, diff_heatmap_fc)
