@@ -65,16 +65,16 @@ logfc <- argv$logfc
 dispersion <- argv$dispersion
 lib_size <- argv$lib_size
 
+## read expression tables
 dir.create(outdir, showWarnings = FALSE)
-
 check_file(counts_file)
 check_file(tpm_table)
-
 gene_tpm_matrix <- fread(tpm_table, check.names = F)
 gene_counts <- fread(counts_file, check.names = F)
 gene_tpm_matrix <- data.frame(gene_tpm_matrix)
 gene_counts <- data.frame(gene_counts)
 
+## load compare and sample information
 each_pair <- unlist(strsplit(compare, split = ":"))
 con1_sample <- unlist(strsplit(strsplit2(samples, split=':')[1], split=','))
 con2_sample <- unlist(strsplit(strsplit2(samples, split=':')[2], split=','))
@@ -82,13 +82,14 @@ samples <- c(con1_sample, con2_sample)
 check_samples(samples, gene_counts)
 check_samples(samples, gene_tpm_matrix)
 
-
+## extract analysis sample's expression table
 each_pair_cts <- gene_counts[, samples]
 rownames(each_pair_cts) <- gene_counts[,1]
 each_pair_cts <- each_pair_cts[rowSums(each_pair_cts)>=2,]
 
+## load counts into edgeR DEGList and normalization
 conditions = factor(c(rep(each_pair[1], length(con1_sample)),
-                      rep(each_pair[2], length(con2_sample))))
+  rep(each_pair[2], length(con2_sample))))
 if (is.na(lib_size)) {
     y <- DGEList(each_pair_cts, group=conditions)
 } else {
@@ -99,7 +100,7 @@ if (is.na(lib_size)) {
 }
 y <- calcNormFactors(y)
 
-## diff
+## diff analysis
 if (length(con1_sample) > 1 && length(con2_sample) > 1) {
   y <- estimateDisp(y)
   et <- exactTest(y, pair=rev(each_pair))
@@ -107,6 +108,7 @@ if (length(con1_sample) > 1 && length(con2_sample) > 1) {
   et <- exactTest(y, pair=rev(each_pair), dispersion=dispersion)
 }
 
+## merge DE table with tpm table and output
 tTags <- topTags(et,n=NULL)
 new_tTags <- tTags$table
 new_tTags <- new_tTags[, !(names(new_tTags) %in% c("logCPM"))]
@@ -115,7 +117,6 @@ rownames(each_pair_matrix) <- gene_tpm_matrix[, 1]
 merged_df <- merge(each_pair_matrix, new_tTags, by.x = 0, by.y = 0, all.y = T)
 sorted_merged_df <- arrange(merged_df, FDR)
 colnames(sorted_merged_df)[1] <- 'Gene_ID'
-
 out_file_name_prefix <- paste(outdir, '/', each_pair[1], '_vs_', each_pair[2], sep = '')
 write.table(sorted_merged_df,
             file=paste(out_file_name_prefix, 'edgeR.DE_results.txt', sep = '.'),
