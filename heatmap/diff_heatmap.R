@@ -155,13 +155,18 @@ melt_diff_matrix <- function(diff_matrix, plot_order, type='up'){
 }
 
 
-plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix){
+plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix, pallet='number'){
   p <- ggplot(m_diff_matrix_por, aes(comp2, comp1)) +
     geom_tile(aes(fill = number), color='white') +
-    scale_fill_gradient2(low = "steelblue", mid = 'white', high = "red",
-      limits = c(-2,2)) +
     # scale_fill_gradientn(colors = color1, limits=c(0,10)) +
-    geom_text(data=m_diff_matrix, aes(comp2, comp1, label = number), size=1.8 )
+    geom_text(data=m_diff_matrix, aes(comp2, comp1, label = number), size=1) 
+  if (pallet == 'number') {
+    p <- p + scale_fill_gradientn(colors = color1, limits=c(0,1))
+  } else {
+    p <- p + scale_fill_gradient2(low = "steelblue", mid = 'white', 
+                                  high = "red",
+                                  limits = c(-2,2))
+  }
   
   p <- p + labs(x = "",y = "") + 
     scale_x_discrete(expand = c(0, 0), position = "top") +
@@ -172,15 +177,24 @@ plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix){
   return(p)
 }
 
-
-diff_heatmap_updown <- function(name, num_stats='diff_num', plot='all') {
-  diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.txt', sep='.'))
+name <- 'miRNA'
+num_stats='diff'
+plot='all'
+diff_heatmap_updown <- function(name, num_stats='diff', plot='all') {
+  diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.rename.txt', sep='.'))
   diff_matrix <- read.delim(diff_matrix_file, check.names = F, row.names = 1)
+  gene_num_file <- file.path('./data/', paste(name, num_stats, 'num.rename.txt', sep='.'))
+  gene_num_df <- read.delim(gene_num_file)
+  rownames(gene_num_df) <- gene_num_df$group_id
   # gene_type_num <- filter(gene_num_df, gene_biotype == name)
   # rownames(gene_type_num) <- gene_type_num$tissue
   # total_num <- gene_type_num[rownames(diff_matrix), num_stats]
-  total_num <- filter(gene_num_df, gene_type == name)[, num_stats]
-  plot_order <- rownames(diff_matrix_por)
+  plot_order <- rownames(diff_matrix)
+  num_stats <- paste(num_stats, 'num', sep='_')
+  total_num <- gene_num_df[plot_order, num_stats]
+  names(total_num) <- gene_num_df$group_id
+  #total_num <- data.frame(total_num)
+  
  
   
   if (plot == 'updown') {
@@ -219,8 +233,11 @@ diff_heatmap_updown <- function(name, num_stats='diff_num', plot='all') {
 genes <- c('lncRNA', 'TUCP', 'miRNA', 'circRNA', 'protein_coding')
 #genes <- c('miRNA')
 
-diff_heatmap_updown('miRNA')
-sapply(genes, diff_heatmap_updown)
+diff_heatmap_updown('miRNA', num_stats='diff', plot='updown')
+
+sapply(genes, diff_heatmap_updown, num_stats='diff', plot='updown')
+sapply(genes, diff_heatmap_updown, num_stats='diff', plot='all')
+
 sapply(genes, diff_heatmap_updown, num_stats='detected_number')
 
 
@@ -236,10 +253,10 @@ treat_fc_matric <- function(fc_matrix_file) {
 
 diff_heatmap_fc <- function(name='lncRNA') {
   base_name <- 'protein_coding'
-  base_diff_file <- file.path('./data', paste(base_name, 'diff.fc.txt', sep='.'))
+  base_diff_file <- file.path('./data', paste(base_name, 'diff.fc.rename.txt', sep='.'))
   base_diff_matrix <- treat_fc_matric(base_diff_file)
   
-  diff_matrix_file = file.path('./data', paste(name, 'diff.fc.txt', sep='.'))
+  diff_matrix_file = file.path('./data', paste(name, 'diff.fc.rename.txt', sep='.'))
   diff_matrix <- treat_fc_matric(diff_matrix_file)
   
   comp_matrix <- round(log2(diff_matrix / base_diff_matrix), 2)
@@ -252,7 +269,7 @@ diff_heatmap_fc <- function(name='lncRNA') {
   m_comp_matrix <- melt_diff_matrix(comp_matrix, plot_order, type=each_type)
   p_m_comp_matrix <- melt_diff_matrix(p_matrix, plot_order, type=each_type)
   
-  p <- plot_heatmap(p_m_comp_matrix, m_comp_matrix)
+  p <- plot_heatmap(p_m_comp_matrix, m_comp_matrix, pallet='fc')
   ggsave(filename = paste(name, 'vs', base_name, 'diff.fc.png', sep = '.'),
     width = 8, height = 8, plot = p)
   ggsave(filename = paste(name, 'vs', base_name, 'diff.fc.pdf', sep = '.'),
