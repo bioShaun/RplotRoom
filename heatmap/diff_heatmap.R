@@ -105,6 +105,55 @@ sapply(genes, diff_heatmap)
 #   is.corr = F,cl.lim = c(0, 1), col = colmat(200)
 # )
 
+
+# cluster
+library(ggdendro)
+library(ggplot2)
+library(summer)
+
+
+color1_part1 <- colorRampPalette(brewer.pal(n = 7, name = "Blues"))(21)
+color1_part2 <- colorRampPalette(brewer.pal(n = 9, name = "Blues")[8:9])(40)
+color1 <- c(color1_part1, color1_part2)
+
+name <- 'TUCP'
+
+plot_dendro <- function(name) {
+  name <- 'miRNA'
+  all_files <- list.files('./data/')
+  name_pattern <- paste('rename', name, 'tpm.*grp.txt', sep='.')
+  exp_file_name <- all_files[grep(name_pattern, all_files)]
+  exp_file <- file.path('./data', exp_file_name)
+  exp_df <- read.table(exp_file,header = T,row.names = 1,com = "", check.names = F)
+  data.mat <- as.matrix(exp_df)
+  data.mat.log <- log2(data.mat+1)
+  sample_cor = cor(data.mat.log, method='pearson', use='pairwise.complete.obs')
+  sample_dist = as.dist(1-sample_cor)
+  sample_dist = sample_dist *100
+  fit_hc <- hclust(sample_dist)
+  dendr <- dendro_data(fit_hc,type="rectangle")
+  text.df <- label(dendr)
+  max_y <- max(segment(dendr)$yend) 
+  add_y <- ceiling(max_y / 15) 
+  max_y <- ceiling(max_y + max_y/15)
+  
+  p <- ggplot()
+  p <- p + geom_segment(data=segment(dendr), aes(x=x, y=y, xend=xend, yend=yend),size = 0.2)
+  
+  p <- p + geom_text(data = text.df,aes(x=x,y = -add_y/5,label=label),angle = 90,vjust = 0,hjust = 1,size = 2) + ylim(-add_y * 1.5, max_y)
+  p <- p + theme_bw() + theme(panel.grid = element_blank(), 
+                              panel.border = element_blank(),
+                              axis.ticks = element_blank(),
+                              axis.title = element_blank(),
+                              axis.text = element_blank())
+  ggsave(filename = paste(name, 'dendrogram.png', sep = '.'),
+         width = 8, height = 6, plot = p)
+  ggsave(filename = paste(name, 'dendrogram.pdf', sep = '.'),
+         width = 8, height = 6, plot = p)  
+  return(text.df)
+}
+
+plot_dendro('miRNA')
 # try ggplot2
 # (https://learnr.wordpress.com/2010/01/26/ggplot2-quick-heatmap-plotting/)
 
@@ -156,6 +205,8 @@ melt_diff_matrix <- function(diff_matrix, plot_order, type='up'){
 
 
 plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix, pallet='number'){
+  # m_diff_matrix_por <- t_diff_matrix_por
+  # m_diff_matrix <- t_diff_matrix
   p <- ggplot(m_diff_matrix_por, aes(comp2, comp1)) +
     geom_tile(aes(fill = number), color='white') +
     # scale_fill_gradientn(colors = color1, limits=c(0,10)) +
@@ -181,21 +232,25 @@ name <- 'miRNA'
 num_stats='diff'
 plot='all'
 diff_heatmap_updown <- function(name, num_stats='diff', plot='all') {
+  name <- 'miRNA'
+  num_stats='diff'
+  cluster_df <- plot_dendro(name)
   diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.rename.txt', sep='.'))
   diff_matrix <- read.delim(diff_matrix_file, check.names = F, row.names = 1)
+  
   gene_num_file <- file.path('./data/', paste(name, num_stats, 'num.rename.txt', sep='.'))
   gene_num_df <- read.delim(gene_num_file)
   rownames(gene_num_df) <- gene_num_df$group_id
   # gene_type_num <- filter(gene_num_df, gene_biotype == name)
   # rownames(gene_type_num) <- gene_type_num$tissue
   # total_num <- gene_type_num[rownames(diff_matrix), num_stats]
-  plot_order <- rownames(diff_matrix)
+  # plot_order <- rownames(diff_matrix)
+  plot_order <- cluster_df$label
   num_stats <- paste(num_stats, 'num', sep='_')
-  total_num <- gene_num_df[plot_order, num_stats]
+  col_order <- rownames(diff_matrix)
+  total_num <- gene_num_df[col_order, num_stats]
   names(total_num) <- gene_num_df$group_id
   #total_num <- data.frame(total_num)
-  
- 
   
   if (plot == 'updown') {
     each_type = 'all'
