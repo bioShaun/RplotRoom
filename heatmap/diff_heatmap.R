@@ -3,7 +3,6 @@ library(superheat)
 library(RColorBrewer)
 library(dplyr)
 library(viridis)
-library(corrplot)
 library(reshape2)
 library(ggplot2)
 library(tibble)
@@ -116,7 +115,6 @@ color1_part1 <- colorRampPalette(brewer.pal(n = 7, name = "Blues"))(21)
 color1_part2 <- colorRampPalette(brewer.pal(n = 9, name = "Blues")[8:9])(40)
 color1 <- c(color1_part1, color1_part2)
 
-name <- 'TUCP'
 
 plot_dendro <- function(name) {
   all_files <- list.files('./data/')
