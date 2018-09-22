@@ -119,7 +119,6 @@ color1 <- c(color1_part1, color1_part2)
 name <- 'TUCP'
 
 plot_dendro <- function(name) {
-  name <- 'miRNA'
   all_files <- list.files('./data/')
   name_pattern <- paste('rename', name, 'tpm.*grp.txt', sep='.')
   exp_file_name <- all_files[grep(name_pattern, all_files)]
@@ -228,12 +227,11 @@ plot_heatmap <- function(m_diff_matrix_por, m_diff_matrix, pallet='number'){
   return(p)
 }
 
-name <- 'miRNA'
-num_stats='diff'
-plot='all'
+# name <- 'miRNA'
+# num_stats='diff'
+# plot='all'
 diff_heatmap_updown <- function(name, num_stats='diff', plot='all') {
-  name <- 'miRNA'
-  num_stats='diff'
+
   cluster_df <- plot_dendro(name)
   diff_matrix_file = file.path('./data', paste(name, 'diff.matrix.rename.txt', sep='.'))
   diff_matrix <- read.delim(diff_matrix_file, check.names = F, row.names = 1)
